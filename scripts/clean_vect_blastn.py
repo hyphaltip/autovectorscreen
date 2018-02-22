@@ -81,10 +81,10 @@ with open(cleaned, "w") as output_handle, open(logging,"w") as log:
                 else:
                     if( l[0]- 1  < seqlen - l[1]):
                         record = record[l[1]:]
-                        log.write( "%s [%d,%d] trimming 5' though does not match 1 or len=%d" % 
+                        log.write( "%s [%d,%d] trimming 5' though does not match 1 or len=%d\n" % 
                                    (record.id,l[0],l[1],seqlen))
                     else:
-                        log.write( "%s [%d,%d] trimming 3' though does not match 1 or len=%d" % 
+                        log.write( "%s [%d,%d] trimming 3' though does not match 1 or len=%d\n" % 
                                    (record.id,l[0],l[1],seqlen))
                         record = record[:l[0]]
 
