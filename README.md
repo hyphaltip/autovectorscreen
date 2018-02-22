@@ -1,5 +1,4 @@
-# vectorscreen
-Process vectorscreening locally.
+Automagically process vector screening and file trimming locally.
 
 Motivation
 ==========
