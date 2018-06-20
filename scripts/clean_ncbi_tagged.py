@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import sys, csv, re, operator
-# biopython needed
+import sys, csv, re
+
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
@@ -45,37 +45,73 @@ def merge_intervals(intervals):
 
 
 fastafile = sys.argv[1]
-blastn = sys.argv[2]
-cleaned = fastafile + ".clean.fsa"
-logging = fastafile + ".parse.log"
+ncbirpt = sys.argv[2]
+cleaned = fastafile + ".filtered_clean2.fsa"
+logging = fastafile + ".parse_tagged2.log"
 
 excludes = {}
+trims = {}
+duplicates = {}
 
-with open(blastn,"r") as vectab:
-    rdr = csv.reader(vectab,delimiter="\t")
-    for row in rdr:
-        idin = row[0]
-        loc = [int(row[6]), int(row[7])]
-        if loc[0] > loc[1]:
-            loc = [loc[1],loc[0]]
+with open(ncbirpt,"r") as rpt:    
+    status = ""
+    for line in rpt:
+        if  line.startswith("Exclude:"):
+            status = "E"
+            header = rpt.readline()
+            for exline in rpt:
+                if exline.startswith("\n"):
+                    break # end the exclude loop
 
-        if idin not in excludes:
-            excludes[idin] = []
+                cols = exline.split(maxsplit=3)
+                excludes[cols[0]] = 1
 
-        excludes[idin].append(loc)
+        elif line.startswith("Trim:"):
+            status = "T"
+            header = rpt.readline()
+            for tline in rpt:
+                if tline.startswith("\n"):
+                    break # end the trim
 
+                cols = tline.split(maxsplit=4)
+                if cols[0] not in trims:
+                    trims[cols[0]] = []
+                loc1 = cols[2].split("..")
+               # print ("adding %s to list for location %s" % ( cols[0],loc1))
+                trims[cols[0]].append(loc1)
+
+        elif line.startswith("Duplicated:"):
+            status = "D"
+            header = rpt.readline()
+            for dline in rpt:
+                if dline.startswith("\n"):
+                    break # end the trim
+                
+                cols = dline.split()
+                len = cols.pop()
+                len = cols.pop()
+                for col in cols[1:]:
+                    col = re.sub("lcl\|","",col)
+#                    print("line is ",dline," marking ",col,
+#                          " to remove as dup")
+                    duplicates[col] = 1
+                
 with open(cleaned, "w") as output_handle, open(logging,"w") as log:
     for record in SeqIO.parse(fastafile, "fasta"):
         record.description = ""
         if record.id in excludes:
-            trimloc = excludes[record.id]
-
+            #skip this record
+            log.write("Skipping %s as is considered a contaminant\n" % record.id)
+            continue
+        elif record.id in trims:
+            trimloc = trims[record.id]
+            print(record.id, "Begin trim loop for %s is len %d" %(record.id,len(record)))
             if len(trimloc) > 1:
                 trimloc = sorted(merge_intervals(trimloc),
                                  reverse=True,
                                  key=lambda locitem: locitem[0])
-
-            seqlen = len(record)
+#                print("trim loc is ",trimloc)
+#                print("more than one trim location ... maybe a chimera?",record.id)
             for loc in trimloc:
                 left = int( loc[0] ) - 1
                 right = int( loc[1] )
@@ -88,14 +124,23 @@ with open(cleaned, "w") as output_handle, open(logging,"w") as log:
                     newrecord = record[:left]
                 else:
                     # internal slicing
-                    #print("-->internal slicing :%d .. %d:" % (left,right-1))
-                    #print('left string is', record[0:left])
-                    #print('right string is', record[right-1:])
+#                    print("-->internal slicing :%d .. %d:" % (left,right-1))
+#                    print('left string is', record[0:left])
+#                    print('right string is', record[right-1:])
                     newrecord = record[0:left] + record[right-1:]
                     newrecord.id = record.id
-                    #print(" -- new len is",newrecord.id, len(newrecord),
-                    #      newrecord)
+#                    print(" -- new len is",newrecord.id, len(newrecord),
+#                          newrecord)
                 record = newrecord
+#                print(record.id, "after is ",len(record), "long")
+        
+            print("done with trimming loop length %s is now %d"
+                  % (record.id, len(record)) )
+                                                                   
+        elif record.id in duplicates:
+            log.write("Skipping %s as is considered a duplicate\n" % record.id)
+            continue
 
         if(len(record) >= 200):
             SeqIO.write(record, output_handle, "fasta")
+
