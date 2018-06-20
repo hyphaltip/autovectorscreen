@@ -9,7 +9,7 @@ Motivation
 This worked for me, happy to more generalize it if needed
 
 1. Run BLAST jobs/vecscreen_blastn.sh - this script expects Trinity assemblies but can be changed
-2. Run jobs/parse.sh - will parse the results and generated trimmed files for upload to TSA or other GenBank db
+2. Run jobs/parse_vecscreen_blastn.sh - will parse the results and generated trimmed files for upload to TSA or other GenBank db
 
 AUTHOR
 ======
