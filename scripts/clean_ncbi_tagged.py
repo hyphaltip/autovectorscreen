@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, csv, re
+import sys, csv, re, operator
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -46,8 +46,8 @@ def merge_intervals(intervals):
 
 fastafile = sys.argv[1]
 ncbirpt = sys.argv[2]
-cleaned = fastafile + ".filtered_clean2.fsa"
-logging = fastafile + ".parse_tagged2.log"
+cleaned = fastafile + ".filtered_clean.fsa"
+logging = fastafile + ".parse_tagged.log"
 
 excludes = {}
 trims = {}
@@ -76,9 +76,12 @@ with open(ncbirpt,"r") as rpt:
                 cols = tline.split(maxsplit=4)
                 if cols[0] not in trims:
                     trims[cols[0]] = []
-                loc1 = cols[2].split("..")
-               # print ("adding %s to list for location %s" % ( cols[0],loc1))
-                trims[cols[0]].append(loc1)
+                locs = cols[2].split(",")
+                #print("locs are %s" % locs)
+                for l in locs:
+                    loc1 = [ int(x) for x in l.split("..")]
+                    #print ("adding %s to list for location %s" % ( cols[0],loc1))
+                    trims[cols[0]].append(loc1)
 
         elif line.startswith("Duplicated:"):
             status = "D"
