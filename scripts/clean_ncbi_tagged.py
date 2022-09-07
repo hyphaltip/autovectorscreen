@@ -3,7 +3,6 @@ import sys, csv, re, operator
 
 from Bio import SeqIO
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna
 
 # this code is based on this post on stackexchange
 # https://codereview.stackexchange.com/questions/69242/merging-overlapping-intervals
@@ -118,7 +117,7 @@ with open(cleaned, "w") as output_handle, open(logging,"w") as log:
             for loc in trimloc:
                 left = int( loc[0] ) - 1
                 right = int( loc[1] )
-                newrecord = Seq("",generic_dna)
+                newrecord = Seq("")
                 print("trimming %d to %d in %s len=%d" 
                       % (left,right,record.id,len(record)))
                 if left == 0:
